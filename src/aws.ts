@@ -17,10 +17,10 @@ export const getPresignedUrls = async (files: TUPLOADFILE[], folder: string) => 
     const mimeType = mime.lookup(file.file_name);
     if (mimeType === false || !mimeType.startsWith("image/")) return null;
 
-    const location = `${folder}/${Date.now()}-${file.file_name}`;
+    const key = `${folder}/${Date.now()}-${file.file_name}`;
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET!,
-      Key: location,
+      Key: key,
       ContentType: "image/*",
       ACL: "public-read",
     });
@@ -30,7 +30,8 @@ export const getPresignedUrls = async (files: TUPLOADFILE[], folder: string) => 
     });
     const data = {
       pre_signed_url: put_pre_signed_url,
-      image_url: `${process.env.AWS_FILE_LOCATION_BASE_URL!}/${location}`,
+      image_url: `${process.env.AWS_FILE_LOCATION_BASE_URL!}/${key}`,
+      key:key,
       file_name: file.file_name,
     };
     console.log(data);
