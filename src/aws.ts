@@ -11,8 +11,12 @@ const s3Client = new S3Client({
 
 export type TUPLOADFILE = {
   file_name: string;
+  file_size: number;
 };
-export const getPresignedUrls = async (files: TUPLOADFILE[], folder: string) => {
+export const getPresignedUrls = async (
+  files: TUPLOADFILE[],
+  folder: string
+) => {
   const promises = files.map(async (file) => {
     const mimeType = mime.lookup(file.file_name);
     if (mimeType === false || !mimeType.startsWith("image/")) return null;
@@ -21,6 +25,7 @@ export const getPresignedUrls = async (files: TUPLOADFILE[], folder: string) => 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET!,
       Key: key,
+      ContentLength: file.file_size/1024,
       ContentType: "image/*",
       ACL: "public-read",
     });
@@ -31,11 +36,11 @@ export const getPresignedUrls = async (files: TUPLOADFILE[], folder: string) => 
     const data = {
       pre_signed_url: put_pre_signed_url,
       image_url: `${process.env.AWS_FILE_LOCATION_BASE_URL!}/${key}`,
-      key:key,
+      key: key,
       file_name: file.file_name,
     };
     console.log(data);
-    
+
     return data;
   });
 
