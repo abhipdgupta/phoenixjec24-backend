@@ -39,8 +39,9 @@ export const UserModel = mongoose.model("users", userSchema);
 
 const UploadFileSchema = new mongoose.Schema(
   {
-    uploader_email: {
-      type: String,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref:'users',
       required: true,
     },
     file_name: {

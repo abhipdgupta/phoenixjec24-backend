@@ -14,7 +14,7 @@ export const checkAuth = async (
   next: NextFunction
 ) => {
   try {
-    let token = req.headers.authorization;
+    let token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({

@@ -25,7 +25,7 @@ export const getPresignedUrls = async (
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET!,
       Key: key,
-      ContentLength: file.file_size/1024,
+      ContentLength: file.file_size,
       ContentType: "image/*",
       ACL: "public-read",
     });

@@ -39,9 +39,9 @@ app.post("/login", async (req: Request, res: Response) => {
   return res.status(200).json({
     data: {
       token: token,
-      email:user.email,
-      profile_image:user.profile_image,
-      display_name:user.display_name
+      email: user.email,
+      profile_image: user.profile_image,
+      display_name: user.display_name,
     },
     status_code: 200,
     message: `Login successfully`,
@@ -51,13 +51,15 @@ app.post("/login", async (req: Request, res: Response) => {
 app.post(
   "/upload-image-presigned",
   checkAuth,
-  async (req: IAuthRequest, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const user = req.user;
+      const user = (req as IAuthRequest).user;
+      console.log(user);
+      console.log(user?.restricted);
 
       if (
         (user?.restricted && user?.presigned_url_requested! > 10) ||
-        user?.total_size_uploaded! > 10000
+        user?.total_size_uploaded! > 10500000
       ) {
         return res.status(400).json({
           data: null,
@@ -67,11 +69,12 @@ app.post(
       }
 
       const { files }: { files: TUPLOADFILE[] } = req.body;
-      if (files.length > 1 && files[0].file_size > 1024) {
+
+      if (files.length > 1 && files[0].file_size > 2097152) {
         return res.status(400).json({
           data: null,
           status_code: 400,
-          message: "One file can be uploaded at a time and max size is 1MB",
+          message: "One file can be uploaded at a time and max size is 2MB",
         });
       }
 
@@ -95,7 +98,7 @@ app.post(
         message: "Successfully generated presigned urls",
       });
     } catch (error: ErrorEvent | any) {
-      console.log("ERROR IN /upload-image");
+      console.log("ERROR IN /upload-image", error);
       return res.status(500).json({
         data: null,
         status_code: 500,
@@ -111,11 +114,13 @@ app.post(
     try {
       const filesInfo: { file_name: string; key: string; image_url: string }[] =
         req.body;
-      const uploadedBy = req.user?.email;
+      const uploadedEmail = req.user?.email;
+
+      const upladedUserInfo = await UserModel.findOne({ email: uploadedEmail });
 
       const savedImageInfo = filesInfo.map((fileInfo) => {
         const info = {
-          uploader_email: uploadedBy,
+          uploadedBy: upladedUserInfo?._id,
           file_name: fileInfo.file_name,
           key: fileInfo.key,
           url: fileInfo.image_url,
@@ -132,7 +137,7 @@ app.post(
         message: "Successfully saved to database",
       });
     } catch (error: ErrorEvent | any) {
-      console.log("ERROR IN /save-image-detail");
+      console.log("ERROR IN /save-image-detail", error);
       return res.status(500).json({
         data: null,
         status_code: 500,
@@ -147,7 +152,11 @@ app.get("/image-details", async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 15;
     const skip = (page - 1) * limit;
 
-    const images = await UploadFileModel.find({}).sort({_id:-1}).skip(skip).limit(limit);
+    const images = await UploadFileModel.find({})
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("uploadedBy");
 
     const totalCount = await UploadFileModel.countDocuments();
 
@@ -181,6 +190,8 @@ app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.log(err);
+
   return res.status(500).json({
     data: null,
     message: err.message || "Server side/Unhandled error",
