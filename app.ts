@@ -54,12 +54,11 @@ app.post(
   async (req: Request, res: Response) => {
     try {
       const user = (req as IAuthRequest).user;
-      console.log(user);
-      console.log(user?.restricted);
 
       if (
-        (user?.restricted && user?.presigned_url_requested! > 10) ||
-        user?.total_size_uploaded! > 10500000
+        user?.restricted &&
+        (user?.presigned_url_requested! > 10 ||
+          user?.total_size_uploaded! > 10500000)
       ) {
         return res.status(400).json({
           data: null,
@@ -112,8 +111,15 @@ app.post(
   checkAuth,
   async (req: IAuthRequest, res: Response) => {
     try {
-      const filesInfo: { file_name: string; key: string; image_url: string }[] =
-        req.body;
+      console.log(req.body);
+
+      const filesInfo: {
+        file_name: string;
+        key: string;
+        image_url: string;
+        width: number;
+        height: number;
+      }[] = req.body;
       const uploadedEmail = req.user?.email;
 
       const upladedUserInfo = await UserModel.findOne({ email: uploadedEmail });
@@ -124,6 +130,8 @@ app.post(
           file_name: fileInfo.file_name,
           key: fileInfo.key,
           url: fileInfo.image_url,
+          width: fileInfo.width,
+          height: fileInfo.height,
         };
 
         return info;

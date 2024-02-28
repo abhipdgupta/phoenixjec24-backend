@@ -41,7 +41,7 @@ const UploadFileSchema = new mongoose.Schema(
   {
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref:'users',
+      ref: "users",
       required: true,
     },
     file_name: {
@@ -54,6 +54,14 @@ const UploadFileSchema = new mongoose.Schema(
     },
     url: {
       type: String,
+      required: true,
+    },
+    width: {
+      type: Number,
+      required: true,
+    },
+    height: {
+      type: Number,
       required: true,
     },
   },
