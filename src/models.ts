@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    role: {
+      type: String,
+      enum: ["USER", "ADMIN", "MODERATOR"],
+      default: "USER",
+    },
     presigned_url_requested: {
       type: Number,
       default: 0,
@@ -37,12 +42,16 @@ const userSchema = new mongoose.Schema(
 export type TUserModel = InferSchemaType<typeof userSchema>;
 export const UserModel = mongoose.model("users", userSchema);
 
-const UploadFileSchema = new mongoose.Schema(
+const UploadImageSchema = new mongoose.Schema(
   {
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
       required: true,
+    },
+    isApproved: {
+      type: Boolean,
+      default: false,
     },
     file_name: {
       type: String,
@@ -68,5 +77,46 @@ const UploadFileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export type TUploadFileModel = InferSchemaType<typeof UploadFileSchema>;
-export const UploadFileModel = mongoose.model("upload_files", UploadFileSchema);
+export type TUploadImageModel = InferSchemaType<typeof UploadImageSchema>;
+export const UploadImageModel = mongoose.model(
+  "upload_files",
+  UploadImageSchema
+);
+
+const OrganizerSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    default: "",
+  },
+});
+export type TOrganizerModel = InferSchemaType<typeof OrganizerSchema>;
+export const OrganizerModel = mongoose.model("organizers", OrganizerSchema);
+
+const EventsSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  date: {
+    type: Date,
+    required: true,
+  },
+  organizedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
+  description: {
+    type: Date,
+    required: true,
+  },
+  image: {
+    type: String,
+    required: true,
+  },
+});
+export type TEventsModel = InferSchemaType<typeof EventsSchema>;
+export const EventsModel = mongoose.model("events", EventsSchema);
