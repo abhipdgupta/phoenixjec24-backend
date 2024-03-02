@@ -4,8 +4,8 @@ import mime from "mime-types";
 const s3Client = new S3Client({
   region: "ap-south-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_SECRET_KEY!,
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY!,
+    secretAccessKey: process.env.MY_AWS_SECRET_KEY!,
   },
 });
 
@@ -23,7 +23,7 @@ export const getPresignedUrls = async (
 
     const key = `${folder}/${Date.now()}-${file.file_name}`;
     const command = new PutObjectCommand({
-      Bucket: process.env.AWS_BUCKET!,
+      Bucket: process.env.MY_AWS_BUCKET!,
       Key: key,
       ContentLength: file.file_size,
       ContentType: "image/*",
@@ -35,7 +35,7 @@ export const getPresignedUrls = async (
     });
     const data = {
       pre_signed_url: put_pre_signed_url,
-      image_url: `${process.env.AWS_FILE_LOCATION_BASE_URL!}/${key}`,
+      image_url: `${process.env.MY_AWS_FILE_LOCATION_BASE_URL!}/${key}`,
       key: key,
       file_name: file.file_name,
     };
