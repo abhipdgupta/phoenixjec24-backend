@@ -16,64 +16,91 @@ const MemoriesRouter = express.Router();
 const EventsRouter = express.Router();
 const OrganizerRouter = express.Router();
 
-MemoriesRouter.post(
-  "/upload-image-presigned",
-  validUserRequired,
+MemoriesRouter.patch(
+  "/memories/approve",
+  adminRequired,
   async (req: IAuthRequest, res: Response) => {
     try {
-      const user = req.user;
+      const { id } = req.query;
 
-      if (
-        user?.restricted &&
-        (user?.presigned_url_requested! > 10 ||
-          user?.total_size_uploaded! > 10500000)
-      ) {
-        return res.status(400).json({
-          data: null,
-          status_code: 400,
-          message: `Exceeded maximum request.Contact Admin`,
-        });
+      const doc = await UploadImageModel.findById(id);
+
+      if (!doc) {
+        return res.status(404).json({ error: "Image not found" });
       }
 
-      const { files }: { files: TUPLOADFILE[] } = req.body;
-
-      if (files.length > 1 && files[0].file_size > 2097152) {
-        return res.status(400).json({
-          data: null,
-          status_code: 400,
-          message: "One file can be uploaded at a time and max size is 2MB",
-        });
+      if (doc?.isApproved) {
+        doc.isApproved = false;
+      } else {
+        doc.isApproved = true;
       }
 
-      const folder = "memories";
-      const data = await getPresignedUrls(files, folder);
-
-      const USER = await UserModel.findOne({ email: user?.email });
-      if (USER) {
-        USER.presigned_url_requested += 1;
-        USER.total_size_uploaded += files.reduce(
-          (accumulator, currentValue) => accumulator + currentValue.file_size,
-          0
-        );
-
-        await USER.save();
-      }
-
-      return res.status(200).json({
-        data,
-        status_code: 200,
-        message: "Successfully generated presigned urls",
-      });
-    } catch (error: ErrorEvent | any) {
-      console.log("ERROR IN /upload-image", error);
-      return res.status(500).json({
-        data: null,
-        status_code: 500,
-        message: error.message,
-      });
+      await doc.save()
+      return res.status(200).json({ data: doc });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   }
 )
+  .post(
+    "/upload-image-presigned",
+    validUserRequired,
+    async (req: IAuthRequest, res: Response) => {
+      try {
+        const user = req.user;
+
+        if (
+          user?.restricted &&
+          (user?.presigned_url_requested! > 10 ||
+            user?.total_size_uploaded! > 10500000)
+        ) {
+          return res.status(400).json({
+            data: null,
+            status_code: 400,
+            message: `Exceeded maximum request.Contact Admin`,
+          });
+        }
+
+        const { files }: { files: TUPLOADFILE[] } = req.body;
+
+        if (files.length > 1 && files[0].file_size > 2097152) {
+          return res.status(400).json({
+            data: null,
+            status_code: 400,
+            message: "One file can be uploaded at a time and max size is 2MB",
+          });
+        }
+
+        const folder = "memories";
+        const data = await getPresignedUrls(files, folder);
+
+        const USER = await UserModel.findOne({ email: user?.email });
+        if (USER) {
+          USER.presigned_url_requested += 1;
+          USER.total_size_uploaded += files.reduce(
+            (accumulator, currentValue) => accumulator + currentValue.file_size,
+            0
+          );
+
+          await USER.save();
+        }
+
+        return res.status(200).json({
+          data,
+          status_code: 200,
+          message: "Successfully generated presigned urls",
+        });
+      } catch (error: ErrorEvent | any) {
+        console.log("ERROR IN /upload-image", error);
+        return res.status(500).json({
+          data: null,
+          status_code: 500,
+          message: error.message,
+        });
+      }
+    }
+  )
   .post(
     "/save-image-detail",
     validUserRequired,
@@ -137,7 +164,7 @@ MemoriesRouter.post(
         let query: any = {};
         if (user && (user.role === "ADMIN" || user.role === "MODERATOR")) {
           query = {};
-        } else if (user && user.role === "USER") {
+        } else if (!user || user.role === "USER") {
           query = { isApproved: true };
         }
         const images = await UploadImageModel.find(query)
@@ -173,8 +200,8 @@ OrganizerRouter.post(
   async (req: IAuthRequest, res: Response) => {
     try {
       const { name, description } = req.body;
-      const organizer = await OrganizerModel.create({ name, description });
-      return res.status(201).json(organizer);
+      const data = await OrganizerModel.create({ name, description });
+      return res.status(201).json({ data });
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -182,20 +209,22 @@ OrganizerRouter.post(
 )
   .get("/organizer", async (_req: IAuthRequest, res: Response) => {
     try {
-      const organizers = await OrganizerModel.find();
-      return res.status(200).json(organizers);
+      const data = await OrganizerModel.find();
+      return res.status(200).json({ data });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   })
   .get("/organizer/:id", async (req: IAuthRequest, res: Response) => {
     try {
-      const organizer = await OrganizerModel.findById(req.params.id);
-      if (!organizer) {
+      const data = await OrganizerModel.findById(req.params.id);
+      if (!data) {
         return res.status(404).json({ error: "Organizer not found" });
       }
-      return res.status(200).json(organizer);
+      return res.status(200).json({ data });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   })
@@ -213,8 +242,9 @@ OrganizerRouter.post(
         if (!updatedOrganizer) {
           return res.status(404).json({ error: "Organizer not found" });
         }
-        return res.status(200).json(updatedOrganizer);
+        return res.status(200).json({ data: updatedOrganizer });
       } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error" });
       }
     }
@@ -232,6 +262,7 @@ OrganizerRouter.post(
         }
         return res.status(204).send();
       } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error" });
       }
     }
@@ -250,18 +281,82 @@ EventsRouter.post(
         description,
         image,
       });
-      return res.status(201).json(event);
+      return res.status(201).json({ data: event });
     } catch (error) {
+      console.log(error);
+      console.log(error);
+
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
 )
-  .get("/events", async (_req: IAuthRequest, res: Response) => {
-    try {
-      const events = await EventsModel.find();
-      return res.status(200).json(events);
-    } catch (error) {
-      return res.status(500).json({ error: "Internal Server Error" });
+  .post(
+    "/events/presigned-image-url",
+    adminRequired,
+    async (req: IAuthRequest, res: Response) => {
+      try {
+        const { file_name, file_size } = req.body;
+
+        const data = await getPresignedUrls(
+          [{ file_name, file_size }],
+          "events"
+        );
+        return res.status(200).json({
+          data,
+          message: "generated presigned url",
+        });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+  )
+  .get("/events", async (req: IAuthRequest, res: Response) => {
+    {
+      try {
+        const { page = 1, limit = 10 } = req.query;
+
+        const pageNumber = parseInt(page as string);
+        const limitNumber = parseInt(limit as string);
+
+        const skip = (pageNumber - 1) * limitNumber;
+
+        const events = await EventsModel.aggregate([
+          {
+            $lookup: {
+              from: "organizers",
+              localField: "organizedBy",
+              foreignField: "_id",
+              as: "organizedBy",
+            },
+          },
+          {
+            $unwind: "$organizedBy",
+          },
+          {
+            $group: {
+              _id: "$organizedBy.name",
+              events: {
+                $push: "$$ROOT",
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              organizer: "$_id",
+              events: 1,
+            },
+          },
+        ])
+          .skip(skip)
+          .limit(limitNumber);
+
+        return res.status(200).json({ data: events });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
     }
   })
   .get("/events/:id", async (req: IAuthRequest, res: Response) => {
@@ -270,8 +365,9 @@ EventsRouter.post(
       if (!event) {
         return res.status(404).json({ error: "Event not found" });
       }
-      return res.status(200).json(event);
+      return res.status(200).json({ data: event });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   })
@@ -289,8 +385,9 @@ EventsRouter.post(
         if (!updatedEvent) {
           return res.status(404).json({ error: "Event not found" });
         }
-        return res.status(200).json(updatedEvent);
+        return res.status(200).json({ data: updatedEvent });
       } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error" });
       }
     }
@@ -306,6 +403,7 @@ EventsRouter.post(
         }
         return res.status(204).send();
       } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error" });
       }
     }

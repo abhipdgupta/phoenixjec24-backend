@@ -6,7 +6,7 @@ import { UserModel } from "./src/models";
 import cors from "cors";
 import morgan from "morgan";
 import { setjwt } from "./src/jwt";
-import { MemoriesRouter } from "./src/routes";
+import { EventsRouter, MemoriesRouter, OrganizerRouter } from "./src/routes";
 const app: Express = express();
 const port = process.env.PORT || 5000;
 
@@ -16,6 +16,8 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan("dev"));
 app.use("/",MemoriesRouter)
+app.use("/",OrganizerRouter)
+app.use("/",EventsRouter)
 
 
 app.post("/login", async (req: Request, res: Response) => {
@@ -42,6 +44,7 @@ app.post("/login", async (req: Request, res: Response) => {
       email: user.email,
       profile_image: user.profile_image,
       display_name: user.display_name,
+      role:user.role
     },
     status_code: 200,
     message: `Login successfully`,

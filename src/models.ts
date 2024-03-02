@@ -102,7 +102,7 @@ const EventsSchema = new mongoose.Schema({
     required: true,
   },
   date: {
-    type: Date,
+    type: String,
     required: true,
   },
   organizedBy: {
@@ -110,7 +110,7 @@ const EventsSchema = new mongoose.Schema({
     required: true,
   },
   description: {
-    type: Date,
+    type: String,
     required: true,
   },
   image: {

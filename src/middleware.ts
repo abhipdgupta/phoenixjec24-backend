@@ -27,7 +27,7 @@ export const adminRequired = async (
     const userId = decoded.id;
 
     const user = await UserModel.findById(userId);
-
+    
     if (!user) {
       return res.status(404).json({
         data: null,
@@ -91,7 +91,7 @@ export const checkAuth = async (
 ) => {
   try {
     let token = req.headers.authorization?.split(" ")[1];
-
+    
     if (!token) {
       req.user = null;
       return next();
