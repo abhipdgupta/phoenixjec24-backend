@@ -74,3 +74,5 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     status_code: 500,
   });
 });
+
+export default app
