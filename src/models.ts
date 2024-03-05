@@ -103,7 +103,7 @@ const EventsSchema = new mongoose.Schema({
   },
   date: {
     type: String,
-    required: true,
+    default:""
   },
   organizedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -111,7 +111,7 @@ const EventsSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
+    default:""
   },
   image: {
     type: String,
